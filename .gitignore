@@ -1,0 +1,20 @@
+# Documents officiels (droits FIVB) et données générées
+data/raw/
+data/processed/
+*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Secrets
+.env
+
+# Éditeurs / OS
+.vscode/
+.idea/
+.DS_Store

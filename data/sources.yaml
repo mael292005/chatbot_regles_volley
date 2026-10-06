@@ -1,0 +1,44 @@
+# Documents officiels utilisés par le chatbot.
+# Les fichiers sont téléchargés dans data/raw/ par scripts/download_sources.py
+# et ne sont pas versionnés (droits FIVB).
+
+sources:
+  - id: fivb_regles_2025_2028_fr
+    titre: "Règles officielles de volleyball 2025-2028"
+    editeur: FIVB
+    langue: fr
+    edition: "2025-2028"
+    role: corpus_principal
+    url: https://www.fivb.com/wp-content/uploads/2025/06/FIVB-Volleyball_Rules2025_2028-FR-v04.pdf
+    fichier: fivb_regles_2025_2028_fr.pdf
+    consulte_le: 2026-10-06
+
+  - id: fivb_rules_2025_2028_en
+    titre: "Official Volleyball Rules 2025-2028"
+    editeur: FIVB
+    langue: en
+    edition: "2025-2028"
+    role: version_anglaise
+    url: https://www.fivb.com/wp-content/uploads/2025/01/FIVB-Volleyball_Rules2025_2028-EN-v05.pdf
+    fichier: fivb_rules_2025_2028_en.pdf
+    consulte_le: 2026-10-06
+
+  - id: fivb_casebook_2025
+    titre: "Rules of the Game — Volleyball Casebook 2025"
+    editeur: FIVB
+    langue: en
+    edition: "2025"
+    role: jeu_de_test
+    url: https://inside.cev.eu/media/n40ey4ap/casebook-2025.pdf
+    fichier: fivb_casebook_2025_en.pdf
+    consulte_le: 2026-10-06
+
+  - id: fivb_guidelines_2025
+    titre: "Refereeing Guidelines and Instructions 2025"
+    editeur: FIVB
+    langue: en
+    edition: "2025"
+    role: interpretations
+    url: https://inside.cev.eu/media/bm4jik3r/new-guidelines-instructions-2025.pdf
+    fichier: fivb_guidelines_2025_en.pdf
+    consulte_le: 2026-10-06
