@@ -75,8 +75,37 @@ Le PDF officiel est découpé en **542 articles** (les 30 règles, du niveau `7`
 Les fichiers produits (`data/processed/*.jsonl`) ne sont pas versionnés, car ils reprennent le texte officiel.
 
 ```bash
-pytest   # 15 tests, dont : chaque règle citée dans le jeu de test existe bien dans le règlement
+pytest   # 23 tests, dont : chaque règle citée dans le jeu de test existe bien dans le règlement
 ```
+
+## Recherche des articles
+
+Avant de générer une réponse, il faut retrouver les bons passages du règlement. Trois méthodes sont comparées :
+
+| Méthode | Principe | Besoin |
+| --- | --- | --- |
+| BM25 | mots-clés communs entre la question et l'article | rien |
+| Dense | proximité de sens, via les embeddings **bge-m3** | Ollama |
+| Hybride | fusion des deux classements (Reciprocal Rank Fusion) | Ollama |
+
+```bash
+ollama pull bge-m3
+python -m volley_rag.index                                   # embeddings des 122 sections + 12 définitions
+python -m volley_rag.retrieval "Si je touche le filet, c'est faute ?"
+python -m volley_rag.eval_retrieval                          # mesure sur le jeu de test
+```
+
+### Résultats
+
+34 questions du jeu de test (hors sujet exclues). Succès = une section attendue parmi les k premiers résultats.
+
+| Méthode | Recall@1 | Recall@3 | Recall@5 | MRR |
+| --- | ---: | ---: | ---: | ---: |
+| BM25 | 59 % | 85 % | 88 % | 0,72 |
+| Dense (bge-m3) | à mesurer | | | |
+| Hybride | à mesurer | | | |
+
+Les échecs de BM25 sont des écarts de vocabulaire : un joueur dit « porté », le règlement dit « tenu » ; « avec le pied » ne correspond à aucun mot de « n'importe quelle partie du corps ». Détail : [`eval/results/recherche.md`](eval/results/recherche.md).
 
 ## Structure du dépôt
 
@@ -93,10 +122,15 @@ chatbot_regles_volley/
 │   └── questions.yaml        # jeu de test (questions + réponse attendue + règle)
 ├── scripts/
 │   └── download_sources.py
+├── eval/results/             # résultats des évaluations (générés)
 ├── src/volley_rag/
-│   └── extraction.py         # PDF → articles structurés
+│   ├── extraction.py         # PDF → articles structurés
+│   ├── documents.py          # sections + définitions à indexer
+│   ├── embeddings.py         # embeddings via Ollama
+│   ├── index.py              # construction de l'index
+│   ├── retrieval.py          # BM25, dense, hybride
+│   └── eval_retrieval.py     # Recall@k, MRR
 └── tests/
-    └── test_extraction.py
 ```
 
 ## Feuille de route
@@ -106,7 +140,8 @@ chatbot_regles_volley/
 - [ ] Jeu de test v2 : ajouter les cas du casebook FIVB 2025 et d'autres questions de terrain
 - [ ] Mesure de départ : réponses d'un chatbot généraliste sur le jeu de test
 - [x] Extraction et découpage du règlement (par article, avec numéro, page, renvois et passages FIVB)
-- [ ] Recherche (embeddings + éventuellement reranking)
+- [x] Recherche : BM25, dense (bge-m3) et hybride, avec évaluation Recall@k / MRR
+- [ ] Mesurer dense et hybride sur GPU, puis tester un reranker
 - [ ] Génération avec citation obligatoire et refus hors sujet
 - [ ] Évaluation chiffrée et publication des résultats ici
 - [ ] Interface web simple
