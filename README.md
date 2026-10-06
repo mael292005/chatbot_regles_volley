@@ -75,7 +75,7 @@ Le PDF officiel est découpé en **542 articles** (les 30 règles, du niveau `7`
 Les fichiers produits (`data/processed/*.jsonl`) ne sont pas versionnés, car ils reprennent le texte officiel.
 
 ```bash
-pytest   # 23 tests, dont : chaque règle citée dans le jeu de test existe bien dans le règlement
+pytest   # 34 tests, dont : chaque règle citée dans le jeu de test existe bien dans le règlement
 ```
 
 ## Recherche des articles
@@ -114,6 +114,32 @@ python -m volley_rag.eval_retrieval                          # mesure sur le jeu
 
 Limites : 34 questions seulement (une question = 3 points de pourcentage), rédigées en connaissant le règlement. Le jeu de test doit grandir avec de vraies questions de joueurs. Détail : [`eval/results/recherche.md`](eval/results/recherche.md).
 
+## Poser une question
+
+Le LLM local reçoit les 5 passages trouvés par bge-m3 et doit répondre **uniquement à partir d'eux**, en citant les articles, en signalant les passages réservés aux compétitions FIVB et en refusant le hors sujet. La sortie est contrainte en JSON pour être vérifiable.
+
+```bash
+ollama pull qwen3:14b
+python -m volley_rag.ask "Si je touche le filet, c'est faute ?"
+python -m volley_rag.ask --modele mistral-nemo "Le libéro peut-il servir ?"
+```
+
+## Évaluation des réponses
+
+```bash
+python -m volley_rag.eval_generation --limite 5    # essai rapide
+python -m volley_rag.eval_generation               # qwen3:14b et mistral-nemo, 37 questions
+```
+
+| Mesure | Définition |
+| --- | --- |
+| Justesse | Un LLM juge compare chaque réponse à la réponse attendue : correct (1), partiel (0,5), faux (0). Une question hors sujet bien refusée compte comme correcte. |
+| Bonne règle citée | Au moins une règle citée correspond à une règle attendue (même article, ou parent / enfant) |
+| Citations inventées | Numéros cités qui n'existent pas dans le règlement |
+| Refus | Hors sujet bien refusés ; questions valides refusées à tort |
+
+Résultats : *à mesurer*.
+
 ## Structure du dépôt
 
 ```
@@ -149,8 +175,9 @@ chatbot_regles_volley/
 - [x] Extraction et découpage du règlement (par article, avec numéro, page, renvois et passages FIVB)
 - [x] Recherche : BM25, dense (bge-m3) et hybride, avec évaluation Recall@k / MRR
 - [ ] Mesurer dense et hybride sur GPU, puis tester un reranker
-- [ ] Génération avec citation obligatoire et refus hors sujet
-- [ ] Évaluation chiffrée et publication des résultats ici
+- [x] Génération avec citation obligatoire et refus hors sujet (sortie JSON)
+- [x] Évaluation des réponses (juge LLM, citations, refus)
+- [ ] Mesurer qwen3:14b et mistral-nemo, publier les résultats ici
 - [ ] Interface web simple
 - [ ] Extensions : visualiseur de rotations, beach, anglais
 
