@@ -71,7 +71,8 @@ chatbot_regles_volley/
 ## Feuille de route
 
 - [x] Analyse de marché et de l'existant
-- [ ] Jeu de test : 20 questions de terrain + cas du casebook + questions pièges
+- [x] Jeu de test v1 : 37 questions (dont 7 de terrain), 9 catégories, pièges et hors sujet — [`eval/questions.yaml`](eval/questions.yaml)
+- [ ] Jeu de test v2 : ajouter les cas du casebook FIVB 2025 et d'autres questions de terrain
 - [ ] Mesure de départ : réponses d'un chatbot généraliste sur le jeu de test
 - [ ] Extraction et découpage du règlement (par article, avec numéro et page)
 - [ ] Recherche (embeddings + éventuellement reranking)

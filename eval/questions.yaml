@@ -1,10 +1,380 @@
 # Jeu de test du chatbot.
-# Chaque question a une réponse attendue, la ou les règles qui la justifient,
-# et un statut : officielle | test_international | ancienne_regle | hors_sujet.
-# À compléter avec les questions de terrain (objectif : 20) et les cas du casebook.
+#
+# Champs :
+#   id               identifiant stable
+#   categorie        filet | touches | attaque_contre | service | rotation | libero |
+#                    ballon_in_out | deroulement | hors_sujet
+#   origine          terrain (question réellement posée par un joueur) | redaction (ajoutée pour couvrir le règlement)
+#   question         formulée comme un joueur la poserait
+#   reponse_attendue ce que le bot doit dire, en langage simple
+#   regles           articles des Règles officielles FIVB 2025-2028 (édition française) qui justifient la réponse
+#   statut           officielle | test_international | ancienne_regle | hors_sujet
+#   piege            (optionnel) pourquoi la question est difficile ou souvent mal répondue
+#
+# Source de toutes les réponses : Règles officielles de volleyball 2025-2028 (FIVB), voir data/sources.yaml.
+# À compléter avec les cas du casebook FIVB 2025.
 
 questions:
+
+  # ---------------------------------------------------------------- filet
+  - id: q005
+    categorie: filet
+    origine: terrain
+    question: "Si je touche le filet, c'est toujours faute ? Il y a des endroits où on a le droit de le toucher ?"
+    reponse_attendue: >-
+      Non, pas toujours. C'est une faute de toucher le filet entre les antennes (ou l'antenne elle-même)
+      pendant l'action de jouer le ballon : impulsion, frappe ou tentative, et retour au sol.
+      En revanche, toucher le filet à l'extérieur des antennes, le poteau ou les cordes n'est pas une faute,
+      tant que ça ne gêne pas le jeu. Il n'y a pas non plus faute si c'est le ballon envoyé dans le filet
+      qui pousse le filet contre un joueur adverse.
+    regles: ["11.3.1", "11.3.2", "11.3.3", "11.4.4"]
+    statut: officielle
+    piege: "Beaucoup de joueurs croient que tout contact avec le filet est une faute."
+
+  - id: q006
+    categorie: filet
+    origine: redaction
+    question: "Je touche le filet alors que je ne suis pas du tout sur l'action, c'est faute ?"
+    reponse_attendue: >-
+      En principe non : la faute concerne le joueur qui est en train de jouer le ballon. Mais un joueur
+      proche du ballon qui essaie de le jouer est considéré dans l'action, même sans le toucher.
+      Et c'est toujours une faute de s'appuyer sur le filet, de l'attraper ou de gêner l'adversaire avec.
+    regles: ["11.3.1", "11.4.4"]
+    statut: officielle
+
+  - id: q007
+    categorie: filet
+    origine: terrain
+    question: "Parfois quand je passe le pied de l'autre côté c'est faute, parfois non. C'est quoi la règle ?"
+    reponse_attendue: >-
+      Tu peux toucher le terrain adverse avec le pied, à condition qu'une partie de ce pied reste en contact
+      avec la ligne centrale ou juste au-dessus, et que tu ne gênes pas l'adversaire.
+      C'est une faute si le pied passe entièrement dans le camp adverse. Les autres parties du corps
+      (main, genou) peuvent toucher le camp adverse si elles ne gênent pas. Une fois le ballon hors-jeu,
+      on peut passer sans faute.
+    regles: ["11.2.2.1", "11.2.2.2", "11.4.3", "11.2.3"]
+    statut: officielle
+
+  - id: q008
+    categorie: filet
+    origine: redaction
+    question: "Au contre, j'ai le droit de passer les mains de l'autre côté du filet ?"
+    reponse_attendue: >-
+      Oui, à condition de ne pas gêner l'adversaire. Mais tu ne peux pas toucher le ballon dans l'espace
+      adverse avant que l'adversaire ait fait sa frappe d'attaque.
+    regles: ["14.3", "11.1.1", "14.6.1"]
+    statut: officielle
+
+  - id: q009
+    categorie: filet
+    origine: redaction
+    question: "Après mon smash, ma main passe au-dessus du filet chez l'adversaire. C'est faute ?"
+    reponse_attendue: >-
+      Non, si tu as touché le ballon dans ton propre espace de jeu et que tu ne l'as ni tenu ni lancé.
+    regles: ["11.1.2"]
+    statut: officielle
+
+  # ---------------------------------------------------------------- touches
+  - id: q010
+    categorie: touches
+    origine: terrain
+    question: "Qu'est-ce qui est considéré comme un ballon porté ?"
+    reponse_attendue: >-
+      Le ballon est porté (« tenu ») quand il est saisi ou lancé au lieu de rebondir sur le joueur.
+      Le ballon peut toucher n'importe quelle partie du corps et partir dans n'importe quelle direction,
+      mais il doit rebondir. En attaque, placer le ballon (une feinte) est autorisé si le ballon est
+      clairement frappé, pas tenu.
+    regles: ["9.2.2", "9.3.3", "13.1.2"]
+    statut: officielle
+
+  - id: q011
+    categorie: touches
+    origine: terrain
+    question: "Si le ballon me touche deux fois mais dans un même mouvement, c'est une double touche ?"
+    reponse_attendue: >-
+      Ça dépend de la touche. En règle générale, le ballon ne peut toucher plusieurs parties du corps que si
+      les contacts sont simultanés : deux contacts successifs, même dans un seul mouvement, sont une double
+      touche. Deux exceptions : sur la première touche de l'équipe (la réception ou la défense), des contacts
+      successifs sont tolérés s'ils ont lieu dans la même action ; et au contre, des contacts successifs
+      dans la même action sont permis.
+    regles: ["9.2.3", "9.2.3.1", "9.2.3.2", "9.3.4"]
+    statut: officielle
+    piege: "La réponse change selon qu'on parle de la réception, de la passe ou du contre."
+
+  - id: q012
+    categorie: touches
+    origine: redaction
+    question: "Si je contre et que je retouche le ballon juste après, c'est une double touche ?"
+    reponse_attendue: >-
+      Non. La touche de contre ne compte pas dans les trois touches de l'équipe, et le premier contact
+      après le contre peut être fait par n'importe quel joueur, y compris celui qui a contré.
+      L'équipe a encore droit à trois touches.
+    regles: ["14.4.1", "14.4.2", "9.1.1"]
+    statut: officielle
+
+  - id: q013
+    categorie: touches
+    origine: redaction
+    question: "Si deux joueurs de mon équipe touchent le ballon en même temps, ça compte pour combien de touches ?"
+    reponse_attendue: >-
+      Ça compte pour deux touches (sauf au contre). Si un seul des deux touche vraiment le ballon,
+      ça ne compte que pour une. Une collision entre coéquipiers n'est pas une faute.
+    regles: ["9.1.2.1"]
+    statut: officielle
+
+  - id: q014
+    categorie: touches
+    origine: redaction
+    question: "J'ai le droit de jouer le ballon avec le pied ?"
+    reponse_attendue: "Oui, le ballon peut toucher n'importe quelle partie du corps."
+    regles: ["9.2.1"]
+    statut: officielle
+
+  - id: q015
+    categorie: touches
+    origine: redaction
+    question: "Le ballon part dans le filet, on peut encore le rattraper ?"
+    reponse_attendue: >-
+      Oui, un ballon envoyé dans le filet peut être repris, dans la limite des trois touches de l'équipe.
+    regles: ["10.3.1"]
+    statut: officielle
+
+  - id: q016
+    categorie: touches
+    origine: redaction
+    question: "Le ballon passe à l'extérieur de l'antenne vers le camp adverse, on peut aller le chercher ?"
+    reponse_attendue: >-
+      Seulement si c'est la première touche de l'équipe qui l'a envoyé là. On peut alors le récupérer dans la
+      zone libre adverse, sans toucher le terrain adverse, et le renvoyer chez soi en repassant par l'extérieur,
+      du même côté. Si le ballon venait de la deuxième ou troisième touche, il est « dehors » dès qu'il
+      traverse le plan du filet.
+    regles: ["10.1.2", "10.1.2.1", "10.1.2.2", "10.1.2.3"]
+    statut: officielle
+
+  # ---------------------------------------------------------------- attaque et contre
+  - id: q017
+    categorie: attaque_contre
+    origine: terrain
+    question: "Le joueur derrière le passeur peut sauter des 3 mètres. Est-ce que les deux autres joueurs arrière ont aussi le droit ?"
+    reponse_attendue: >-
+      Oui, les trois joueurs de la ligne arrière (positions 1, 5 et 6) ont exactement les mêmes droits.
+      Ils peuvent attaquer à n'importe quelle hauteur si leur impulsion se fait derrière la ligne des 3 mètres,
+      sans la toucher ni la franchir ; ils peuvent retomber devant. Dans la zone avant, un arrière ne peut
+      attaquer que si une partie du ballon est plus basse que le haut du filet. Ce qui compte, c'est la
+      position dans la rotation au moment du service, pas le poste (attaquant, pointu, passeur).
+    regles: ["13.2.2", "13.2.2.1", "13.2.2.2", "13.2.3", "13.3.3", "7.4.1.2"]
+    statut: officielle
+    piege: "On confond souvent le poste (rôle tactique) et la position dans la rotation."
+
+  - id: q018
+    categorie: attaque_contre
+    origine: terrain
+    question: "Qui a le droit d'attaquer depuis l'avant ?"
+    reponse_attendue: >-
+      Les trois joueurs de la ligne avant (positions 2, 3 et 4) peuvent attaquer à n'importe quelle hauteur,
+      à condition de toucher le ballon dans leur propre espace de jeu.
+    regles: ["13.2.1", "7.4.1.1"]
+    statut: officielle
+
+  - id: q019
+    categorie: attaque_contre
+    origine: terrain
+    question: "Qui a le droit de contrer ?"
+    reponse_attendue: >-
+      Seuls les joueurs de la ligne avant. Un joueur arrière ou le libéro qui participe à un contre effectif
+      (qui touche le ballon) commet une faute ; le libéro n'a même pas le droit de tenter de contrer.
+    regles: ["14.1.1", "14.6.2", "14.6.6", "19.3.1.3"]
+    statut: officielle
+
+  - id: q020
+    categorie: attaque_contre
+    origine: redaction
+    question: "J'ai le droit de contrer ou de smasher directement le service adverse ?"
+    reponse_attendue: >-
+      Contrer le service est interdit. L'attaquer directement est aussi interdit si le ballon est dans la zone
+      avant et entièrement au-dessus du haut du filet.
+    regles: ["14.5", "13.2.4", "13.3.4"]
+    statut: officielle
+
+  - id: q021
+    categorie: attaque_contre
+    origine: redaction
+    question: "Le libéro fait une passe haute devant les 3 mètres, est-ce qu'on peut l'attaquer en l'air ?"
+    reponse_attendue: >-
+      Pas si le ballon est entièrement au-dessus du filet au moment de la frappe : c'est une faute quand la passe
+      du libéro est faite avec les doigts dans sa zone avant. S'il fait la même passe derrière la ligne des
+      3 mètres, ou en manchette, l'attaque est libre.
+    regles: ["19.3.1.4", "13.3.6"]
+    statut: officielle
+    piege: "La règle dépend à la fois de la zone et de la technique (doigts ou non)."
+
+  # ---------------------------------------------------------------- service
+  - id: q022
+    categorie: service
+    origine: redaction
+    question: "Au service, j'ai le droit de mordre la ligne de fond ?"
+    reponse_attendue: >-
+      Non. Au moment de la frappe (ou de l'impulsion pour un service sauté), le serveur ne doit toucher ni
+      le terrain, ligne de fond comprise, ni le sol hors de la zone de service. Après la frappe, il peut
+      retomber dans le terrain.
+    regles: ["12.4.3"]
+    statut: officielle
+
+  - id: q023
+    categorie: service
+    origine: redaction
+    question: "Si mon service touche le filet et passe, c'est bon ?"
+    reponse_attendue: >-
+      Oui. Le ballon peut toucher le filet en le franchissant. Le service n'est fautif que s'il ne franchit
+      pas complètement le filet dans l'espace de passage, touche un coéquipier ou tombe dehors.
+    regles: ["10.2", "12.6.2.1", "12.6.2.2"]
+    statut: officielle
+
+  - id: q024
+    categorie: service
+    origine: redaction
+    question: "Pendant que mon équipe sert, j'ai le droit de lever les bras au filet ?"
+    reponse_attendue: >-
+      Non. Depuis 2025, aucun joueur de l'équipe au service ne peut lever les mains au-dessus de la tête pendant
+      le service, jusqu'à ce que le ballon ait franchi le filet. Faire écran pour cacher la frappe ou la
+      trajectoire est aussi interdit.
+    regles: ["12.5.3", "12.5.1", "12.5.2"]
+    statut: officielle
+
+  - id: q025
+    categorie: service
+    origine: redaction
+    question: "Combien de temps j'ai pour servir ?"
+    reponse_attendue: "8 secondes après le coup de sifflet du premier arbitre."
+    regles: ["12.4.4"]
+    statut: officielle
+
+  # ---------------------------------------------------------------- rotation
+  - id: q026
+    categorie: rotation
+    origine: redaction
+    question: "Quelle est la différence entre une faute de position et une faute de rotation ?"
+    reponse_attendue: >-
+      La faute de rotation, c'est quand le mauvais joueur sert. La faute de position, c'est quand un joueur
+      de l'équipe en réception n'est pas à sa place au moment de la frappe du service (un arrière plus près
+      du filet que son avant, ou deux voisins inversés). Dans les deux cas, l'adversaire gagne le point et
+      le service.
+    regles: ["7.7.1", "7.5.1", "7.5.4", "7.4.2", "7.4.3"]
+    statut: officielle
+
+  - id: q027
+    categorie: rotation
+    origine: redaction
+    question: "Comment on vérifie si un joueur est bien placé : avec ses pieds, son corps ?"
+    reponse_attendue: >-
+      Avec les pieds en contact avec le sol. Un arrière doit avoir au moins une partie d'un pied plus loin du
+      filet que le pied avant de son avant, ou être au même niveau. Même logique sur les côtés : chaque joueur
+      doit avoir une partie d'un pied plus près de sa ligne de côté que le pied le plus éloigné de son voisin.
+    regles: ["7.4.3", "7.4.3.1", "7.4.3.2"]
+    statut: officielle
+
+  - id: q028
+    categorie: rotation
+    origine: redaction
+    question: "On tourne dans quel sens, et quand ?"
+    reponse_attendue: >-
+      Dans le sens des aiguilles d'une montre, quand l'équipe en réception gagne l'échange et récupère le
+      service : le joueur en 2 passe en 1 pour servir, le 1 passe en 6, etc. Si l'équipe au service gagne
+      le point, elle ne tourne pas et le même joueur ressert.
+    regles: ["7.6.2", "12.2.2.1", "12.2.2.2"]
+    statut: officielle
+
+  - id: q029
+    categorie: rotation
+    origine: redaction
+    question: "J'ai lu que la faute de position en réception est maintenant jugée au coup de sifflet et plus au service. C'est vrai ?"
+    reponse_attendue: >-
+      Pas dans le texte officiel : la règle 7.4 juge toujours la position au moment de la frappe du service.
+      La FIVB a autorisé un test sur le moment de cette faute pendant ses propres compétitions, mais ce n'est
+      pas la règle applicable en club.
+    regles: ["7.4", "7.5.1"]
+    statut: test_international
+    piege: "Mélange entre un test international et la règle officielle."
+
+  # ---------------------------------------------------------------- libéro
+  - id: q030
+    categorie: libero
+    origine: redaction
+    question: "Le libéro peut entrer et sortir autant qu'il veut ?"
+    reponse_attendue: >-
+      Oui, ses changements sont illimités et ne comptent pas comme des remplacements, mais il faut au moins
+      un échange terminé entre deux changements. Il ne peut remplacer qu'un joueur de la ligne arrière et
+      ne peut être changé que par le joueur qu'il a remplacé ou par le second libéro.
+    regles: ["19.3.2.1", "19.3.2.2", "19.3.1.1"]
+    statut: officielle
+
+  # ---------------------------------------------------------------- ballon dedans / dehors
+  - id: q031
+    categorie: ballon_in_out
+    origine: redaction
+    question: "Le ballon touche la ligne, il est dedans ou dehors ?"
+    reponse_attendue: "Dedans : les lignes font partie du terrain. Il suffit qu'une partie du ballon touche la ligne."
+    regles: ["8.3", "1.3.2"]
+    statut: officielle
+
+  - id: q032
+    categorie: ballon_in_out
+    origine: redaction
+    question: "Le ballon touche l'antenne, c'est dehors ?"
+    reponse_attendue: "Oui, le ballon est dehors s'il touche l'antenne, les câbles, les poteaux ou le filet à l'extérieur des bandes de côté."
+    regles: ["8.4.3"]
+    statut: officielle
+
+  - id: q033
+    categorie: ballon_in_out
+    origine: redaction
+    question: "Si le ballon touche le plafond, c'est faute ?"
+    reponse_attendue: "Oui, un ballon qui touche le plafond ou un objet hors du terrain est « dehors »."
+    regles: ["8.4.2"]
+    statut: officielle
+
+  # ---------------------------------------------------------------- déroulement du match
+  - id: q034
+    categorie: deroulement
+    origine: redaction
+    question: "Combien de temps morts et de changements on a par set ?"
+    reponse_attendue: "Deux temps morts de 30 secondes et six remplacements par set et par équipe."
+    regles: ["15.1", "15.4.1"]
+    statut: officielle
+
+  - id: q035
+    categorie: deroulement
+    origine: redaction
+    question: "Au 5e set, on change de camp quand ?"
+    reponse_attendue: >-
+      Quand l'équipe qui mène atteint 8 points. Les joueurs gardent leurs positions.
+      Le 5e set se joue en 15 points avec deux points d'écart.
+    regles: ["18.2.2", "6.3.2"]
+    statut: officielle
+
+  # ---------------------------------------------------------------- hors sujet
+  - id: q036
+    categorie: hors_sujet
+    origine: redaction
+    question: "Au beach-volley, on a le droit de faire une feinte avec les doigts ?"
+    reponse_attendue: >-
+      Hors du périmètre actuel : le bot ne couvre que le volley en salle. Le beach a ses propres règles
+      (prévu plus tard).
+    regles: []
+    statut: hors_sujet
+
+  - id: q037
+    categorie: hors_sujet
+    origine: redaction
+    question: "Quelles chaussures acheter pour jouer au volley ?"
+    reponse_attendue: "Hors du périmètre : ce n'est pas une question de règlement."
+    regles: []
+    statut: hors_sujet
+
+  # ---------------------------------------------------------------- questions de départ
   - id: q001
+    categorie: touches
+    origine: redaction
     question: "Est-ce que la double touche à la passe est encore une faute ?"
     reponse_attendue: >-
       Oui. Un joueur ne peut pas toucher le ballon deux fois de suite (double touche).
@@ -14,6 +384,8 @@ questions:
     piege: "Plusieurs sites affirment à tort qu'elle est désormais tolérée."
 
   - id: q002
+    categorie: rotation
+    origine: redaction
     question: "Quand on sert, est-ce qu'on doit encore respecter l'ordre de rotation sur le terrain ?"
     reponse_attendue: >-
       Non. Depuis 2025, les joueurs de l'équipe au service peuvent se placer librement au moment de la frappe.
@@ -23,12 +395,16 @@ questions:
     piege: "Des guides d'avant 2025 disent le contraire."
 
   - id: q003
+    categorie: libero
+    origine: redaction
     question: "Le libéro peut-il servir ?"
     reponse_attendue: "Non, le libéro ne peut ni servir, ni contrer, ni tenter de contrer."
     regles: ["19.3.1.3"]
     statut: officielle
 
   - id: q004
+    categorie: hors_sujet
+    origine: redaction
     question: "Quelle est la meilleure tactique pour battre une équipe qui joue en 6-2 ?"
     reponse_attendue: "Hors du périmètre : c'est une question de tactique, pas de règlement."
     regles: []
