@@ -50,22 +50,53 @@ python scripts/download_sources.py
 
 La liste exacte (URL, date de consultation) est dans [`data/sources.yaml`](data/sources.yaml).
 
+## Installation
+
+```bash
+git clone https://github.com/mael292005/chatbot_regles_volley
+cd chatbot_regles_volley
+python -m venv .venv && source .venv/bin/activate   # Windows : .venv\Scripts\activate
+pip install -e ".[dev]"
+python scripts/download_sources.py                  # télécharge les PDF officiels
+```
+
+## Extraction du règlement
+
+```bash
+python -m volley_rag.extraction
+```
+
+Le PDF officiel est découpé en **542 articles** (les 30 règles, du niveau `7` au niveau `7.4.3.1`), regroupés en **122 sections** prêtes à indexer (ex. `7.4 – POSITIONS` avec tous ses sous-articles), plus **12 définitions**. Pour chaque article :
+
+- le numéro, le titre, le chapitre et la **page imprimée** (pour citer la source) ;
+- le texte, avec les passages réservés aux compétitions FIVB marqués comme tels (ils sont en gras dans le PDF) ;
+- les **renvois** de la marge « Voir Règles » vers d'autres articles et figures.
+
+Les fichiers produits (`data/processed/*.jsonl`) ne sont pas versionnés, car ils reprennent le texte officiel.
+
+```bash
+pytest   # 15 tests, dont : chaque règle citée dans le jeu de test existe bien dans le règlement
+```
+
 ## Structure du dépôt
 
 ```
 chatbot_regles_volley/
 ├── data/
-│   ├── sources.yaml      # liste des documents officiels
-│   ├── raw/              # PDF téléchargés (ignorés par git)
-│   └── processed/        # textes découpés, index (ignorés par git)
+│   ├── sources.yaml          # liste des documents officiels
+│   ├── raw/                  # PDF téléchargés (ignorés par git)
+│   └── processed/            # articles, sections, définitions (ignorés par git)
 ├── docs/
-│   └── analyse-marche.md # étude préalable
+│   ├── analyse-marche.md     # étude préalable
+│   └── choix-techniques.md   # LLM, embeddings, mesures
 ├── eval/
-│   └── questions.yaml    # jeu de test (questions + réponse attendue + règle)
+│   └── questions.yaml        # jeu de test (questions + réponse attendue + règle)
 ├── scripts/
 │   └── download_sources.py
-├── src/                  # code du chatbot (à venir)
-└── tests/                # tests automatisés (à venir)
+├── src/volley_rag/
+│   └── extraction.py         # PDF → articles structurés
+└── tests/
+    └── test_extraction.py
 ```
 
 ## Feuille de route
@@ -74,7 +105,7 @@ chatbot_regles_volley/
 - [x] Jeu de test v1 : 37 questions (dont 7 de terrain), 9 catégories, pièges et hors sujet — [`eval/questions.yaml`](eval/questions.yaml)
 - [ ] Jeu de test v2 : ajouter les cas du casebook FIVB 2025 et d'autres questions de terrain
 - [ ] Mesure de départ : réponses d'un chatbot généraliste sur le jeu de test
-- [ ] Extraction et découpage du règlement (par article, avec numéro et page)
+- [x] Extraction et découpage du règlement (par article, avec numéro, page, renvois et passages FIVB)
 - [ ] Recherche (embeddings + éventuellement reranking)
 - [ ] Génération avec citation obligatoire et refus hors sujet
 - [ ] Évaluation chiffrée et publication des résultats ici
