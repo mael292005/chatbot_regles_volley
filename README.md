@@ -75,7 +75,7 @@ Le PDF officiel est découpé en **542 articles** (les 30 règles, du niveau `7`
 Les fichiers produits (`data/processed/*.jsonl`) ne sont pas versionnés, car ils reprennent le texte officiel.
 
 ```bash
-pytest   # 34 tests, dont : chaque règle citée dans le jeu de test existe bien dans le règlement
+pytest   # 37 tests, dont : chaque règle citée dans le jeu de test existe bien dans le règlement
 ```
 
 ## Recherche des articles
@@ -128,12 +128,12 @@ python -m volley_rag.ask --modele mistral-nemo "Le libéro peut-il servir ?"
 
 ```bash
 python -m volley_rag.eval_generation --limite 5    # essai rapide
-python -m volley_rag.eval_generation               # qwen3:14b et mistral-nemo, 37 questions
+python -m volley_rag.eval_generation               # qwen3:14b et mistral-nemo, 39 questions
 ```
 
 | Mesure | Définition |
 | --- | --- |
-| Justesse | Un LLM juge compare chaque réponse à la réponse attendue : correct (1), partiel (0,5), faux (0). Une question hors sujet bien refusée compte comme correcte. |
+| Justesse | Un LLM juge coche, pour chaque question, si la conclusion est juste, s'il y a une erreur factuelle et quels **points essentiels** sont présents ; le code en déduit correct (1), partiel (0,5) ou faux (0). Une question hors sujet bien refusée compte comme correcte. |
 | Bonne règle citée | Au moins une règle citée correspond à une règle attendue (même article, ou parent / enfant) |
 | Citations inventées | Numéros cités qui n'existent pas dans le règlement |
 | Refus | Hors sujet bien refusés ; questions valides refusées à tort |
@@ -149,6 +149,18 @@ python -m volley_rag.eval_generation               # qwen3:14b et mistral-nemo, 
 - qwen3 cite la bonne règle dans 97 % des cas mais n'est juste qu'à 66 % : l'écart vient de la conclusion tirée de l'article (ou de la sévérité du juge), pas de la recherche.
 - Le refus du hors sujet reste à améliorer.
 - Biais connu : qwen3 juge aussi ses propres réponses.
+
+### Analyse des erreurs v1 et corrections (v2)
+
+| Constat | Exemple | Correction |
+| --- | --- | --- |
+| Réponses réduites à la conclusion, sans les conditions | « Non, ce n'est pas une faute. » (q009) | Le prompt exige les conditions et exceptions après le oui / non |
+| Erreurs de raisonnement sur le texte | « Deux touches dans un même mouvement : pas une double touche » (q011), alors que seul le simultané est permis | Champ `analyse` rempli **avant** la réponse : articles, conditions, exceptions, application à la situation |
+| Juge trop sévère : informations exactes en plus pénalisées, date exigée | q018, q024 | Juge sur une liste de **points essentiels** par question ; verdict calculé par le code |
+| Hors sujet « refusé » mais réponse inventée quand même | beach (q036) | Le refus ne doit contenir aucun élément de réponse |
+| Erreur du jeu de test | « Quelles chaussures acheter ? » est couverte par la règle 4.3.2 | Requalifiée en question de règlement ; 2 nouvelles questions hors sujet (39 au total) |
+
+Mise en garde : le prompt v2 a été ajusté **en lisant les erreurs de ce jeu de test**. Le score v2 sera donc optimiste ; une partie des questions (cas du casebook, nouvelles questions de joueurs) devra être gardée de côté pour une mesure honnête.
 
 ## Structure du dépôt
 
@@ -181,7 +193,7 @@ chatbot_regles_volley/
 ## Feuille de route
 
 - [x] Analyse de marché et de l'existant
-- [x] Jeu de test v1 : 37 questions (dont 7 de terrain), 9 catégories, pièges et hors sujet — [`eval/questions.yaml`](eval/questions.yaml)
+- [x] Jeu de test v2 : 39 questions (dont 7 de terrain), 10 catégories, points essentiels, pièges et hors sujet — [`eval/questions.yaml`](eval/questions.yaml)
 - [ ] Jeu de test v2 : ajouter les cas du casebook FIVB 2025 et d'autres questions de terrain
 - [ ] Mesure de départ : réponses d'un chatbot généraliste sur le jeu de test
 - [x] Extraction et découpage du règlement (par article, avec numéro, page, renvois et passages FIVB)
@@ -189,7 +201,9 @@ chatbot_regles_volley/
 - [ ] Mesurer dense et hybride sur GPU, puis tester un reranker
 - [x] Génération avec citation obligatoire et refus hors sujet (sortie JSON)
 - [x] Évaluation des réponses (juge LLM, citations, refus)
-- [ ] Mesurer qwen3:14b et mistral-nemo, publier les résultats ici
+- [x] Mesurer qwen3:14b et mistral-nemo (v1 : 66 % / 57 %)
+- [ ] Mesurer la v2 (analyse préalable, juge sur points essentiels)
+- [ ] Jeu de test « gardé de côté » (casebook) pour une mesure sans sur-ajustement
 - [ ] Interface web simple
 - [ ] Extensions : visualiseur de rotations, beach, anglais
 

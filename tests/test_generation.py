@@ -41,8 +41,21 @@ class FakeChat:
 
 
 def test_parse_json_answer_clean():
-    parsed = parse_json_answer('{"reponse": "Non.", "regles": ["règle 19.3.1.3"], "hors_sujet": false}')
-    assert parsed == {"reponse": "Non.", "regles": ["19.3.1.3"], "hors_sujet": False}
+    parsed = parse_json_answer(
+        '{"analyse": "19.3.1.3 interdit le service.", "reponse": "Non.", "regles": ["règle 19.3.1.3"], "hors_sujet": false}'
+    )
+    assert parsed == {
+        "analyse": "19.3.1.3 interdit le service.",
+        "reponse": "Non.",
+        "regles": ["19.3.1.3"],
+        "hors_sujet": False,
+    }
+
+
+def test_answer_schema_puts_analysis_first():
+    from volley_rag.ask import ANSWER_SCHEMA
+
+    assert list(ANSWER_SCHEMA["properties"])[0] == "analyse"
 
 
 def test_parse_json_answer_with_surrounding_text():
@@ -90,10 +103,35 @@ def test_rule_matches_hierarchy():
     assert cites_expected_rule(["1.1", "9.3.4"], ["9.3.4", "9.2.3"])
 
 
-def test_judge_reads_verdict_and_handles_garbage():
-    q = {"question": "q", "reponse_attendue": "Oui."}
-    assert judge(FakeChat({"verdict": "partiel", "justification": "manque"}), q, "Oui")["verdict"] == "partiel"
+def test_verdict_from_judgement():
+    from volley_rag.eval_generation import verdict_from_judgement
+
+    ok = {"conclusion_juste": True, "erreur_factuelle": False}
+    assert verdict_from_judgement({**ok, "points_presents": [True, True]}, 2) == "correct"
+    assert verdict_from_judgement({**ok, "points_presents": [True, False]}, 2) == "partiel"
+    assert verdict_from_judgement({**ok, "points_presents": [True]}, 2) == "partiel"  # point non renseigné
+    assert verdict_from_judgement({**ok, "erreur_factuelle": True, "points_presents": [True]}, 1) == "faux"
+    assert verdict_from_judgement({"conclusion_juste": False, "points_presents": [True]}, 1) == "faux"
+
+
+def test_judge_uses_essential_points_and_handles_garbage():
+    q = {"question": "q", "reponse_attendue": "Oui.", "essentiel": ["point A", "point B"]}
+    chat = FakeChat({"justification": "x", "conclusion_juste": True, "erreur_factuelle": False, "points_presents": [True, False]})
+    result = judge(chat, q, "Oui")
+    assert result["verdict"] == "partiel" and result["points_presents"] == [True, False]
+    assert "1. point A\n2. point B" in chat.messages[1]["content"]
     assert judge(FakeChat("n'importe quoi"), q, "Oui")["verdict"] == "faux"
+
+
+def test_every_on_topic_question_has_essential_points():
+    import yaml
+
+    from volley_rag.eval_generation import QUESTIONS
+
+    questions = yaml.safe_load(QUESTIONS.read_text(encoding="utf-8"))["questions"]
+    missing = [q["id"] for q in questions if q["statut"] != "hors_sujet" and not q.get("essentiel")]
+    assert not missing
+    assert sum(q["statut"] == "hors_sujet" for q in questions) >= 4
 
 
 def test_score_answers():
@@ -127,9 +165,11 @@ def test_eval_generation_end_to_end(monkeypatch, tmp_path):
             self.model = model
 
         def chat(self, messages, schema=None):
-            if "verdict" in json.dumps(schema or {}):
-                return json.dumps({"verdict": "correct", "justification": "ok"})
-            return json.dumps({"reponse": "Oui.", "regles": ["9.3.4"], "hors_sujet": False})
+            if "conclusion_juste" in json.dumps(schema or {}):
+                return json.dumps(
+                    {"justification": "ok", "conclusion_juste": True, "erreur_factuelle": False, "points_presents": [True] * 5}
+                )
+            return json.dumps({"analyse": "9.3.4", "reponse": "Oui.", "regles": ["9.3.4"], "hors_sujet": False})
 
     from volley_rag.retrieval import BM25Retriever
 
@@ -144,6 +184,7 @@ def test_eval_generation_end_to_end(monkeypatch, tmp_path):
     data = json.loads((tmp_path / "generation_essai3.json").read_text(encoding="utf-8"))
     assert len(data["reponses"]["faux-a"]) == 3
     assert data["scores"]["faux-a"]["citations_inventees"] == []
+    assert data["scores"]["faux-a"]["verdicts"]["correct"] == 3
 
 
 def test_qwen3_disables_thinking(monkeypatch):

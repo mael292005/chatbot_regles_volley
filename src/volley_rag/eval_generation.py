@@ -40,23 +40,39 @@ DEFAULT_MODELS = ["qwen3:14b", "mistral-nemo"]
 DEFAULT_JUDGE = "qwen3:14b"
 
 JUDGE_PROMPT = """Tu évalues la réponse d'un assistant sur les règles du volley-ball.
-Compare la RÉPONSE DE L'ASSISTANT à la RÉPONSE ATTENDUE (qui fait foi).
+La RÉPONSE ATTENDUE fait foi. Les POINTS ESSENTIELS sont les seuls éléments exigés.
 
-- "correct" : le fond est le même (même conclusion oui/non, mêmes conditions essentielles). \
-La formulation peut différer ; des détails supplémentaires exacts sont acceptés.
-- "partiel" : la conclusion est juste mais une condition essentielle manque, ou la réponse est incomplète.
-- "faux" : la conclusion est fausse, contredit la réponse attendue, ou l'assistant ne répond pas.
+Remplis le JSON ainsi :
+- "justification" : compare brièvement les deux réponses.
+- "conclusion_juste" : true si la conclusion principale de l'assistant (oui / non / ça dépend, \
+ou la valeur demandée) est la même que celle de la réponse attendue.
+- "erreur_factuelle" : true si l'assistant affirme quelque chose qui contredit la réponse attendue. \
+Une information supplémentaire exacte, ou absente de la réponse attendue sans la contredire, \
+n'est PAS une erreur.
+- "points_presents" : pour chaque point essentiel, dans l'ordre, true s'il est exprimé dans la \
+réponse de l'assistant, même avec d'autres mots, sinon false.
 
-Réponds en JSON."""
+N'exige ni date, ni numéro d'article, ni formulation particulière."""
 
 JUDGE_SCHEMA = {
     "type": "object",
     "properties": {
-        "verdict": {"type": "string", "enum": ["correct", "partiel", "faux"]},
         "justification": {"type": "string"},
+        "conclusion_juste": {"type": "boolean"},
+        "erreur_factuelle": {"type": "boolean"},
+        "points_presents": {"type": "array", "items": {"type": "boolean"}},
     },
-    "required": ["verdict", "justification"],
+    "required": ["justification", "conclusion_juste", "erreur_factuelle", "points_presents"],
 }
+
+
+def verdict_from_judgement(data: dict, n_points: int) -> str:
+    """Verdict calculé par le code à partir des cases cochées par le juge (plus reproductible)."""
+    if not data.get("conclusion_juste") or data.get("erreur_factuelle"):
+        return "faux"
+    present = list(data.get("points_presents") or [])[:n_points]
+    present += [False] * (n_points - len(present))
+    return "correct" if all(present) else "partiel"
 
 
 # --------------------------------------------------------------------------- métriques
@@ -72,6 +88,8 @@ def cites_expected_rule(cited: list[str], expected: list[str]) -> bool:
 
 
 def judge(chat, question: dict, answer_text: str) -> dict:
+    points = question.get("essentiel") or [question["reponse_attendue"]]
+    numbered = "\n".join(f"{i}. {p}" for i, p in enumerate(points, 1))
     messages = [
         {"role": "system", "content": JUDGE_PROMPT},
         {
@@ -79,6 +97,7 @@ def judge(chat, question: dict, answer_text: str) -> dict:
             "content": (
                 f"QUESTION : {question['question']}\n\n"
                 f"RÉPONSE ATTENDUE : {question['reponse_attendue']}\n\n"
+                f"POINTS ESSENTIELS :\n{numbered}\n\n"
                 f"RÉPONSE DE L'ASSISTANT : {answer_text}"
             ),
         },
@@ -86,12 +105,15 @@ def judge(chat, question: dict, answer_text: str) -> dict:
     raw = chat.chat(messages, schema=JUDGE_SCHEMA)
     try:
         data = json.loads(raw)
-        verdict = data.get("verdict")
-    except json.JSONDecodeError:
-        data, verdict = {}, None
-    if verdict not in {"correct", "partiel", "faux"}:
-        return {"verdict": "faux", "justification": f"verdict illisible : {raw[:200]}"}
-    return {"verdict": verdict, "justification": str(data.get("justification", ""))}
+        if not isinstance(data, dict) or "conclusion_juste" not in data:
+            raise ValueError
+    except (json.JSONDecodeError, ValueError):
+        return {"verdict": "faux", "justification": f"jugement illisible : {raw[:200]}", "points_presents": []}
+    return {
+        "verdict": verdict_from_judgement(data, len(points)),
+        "justification": str(data.get("justification", "")),
+        "points_presents": list(data.get("points_presents") or [])[: len(points)],
+    }
 
 
 def score_answers(questions: list[dict], answers: list[dict], verdicts: list[dict | None], existing: set[str]) -> dict:
@@ -174,10 +196,15 @@ def render_markdown(models: list[str], judge_model: str, questions, results, sco
         if not bad:
             lines.append("Aucune.")
         for q, entry in bad:
+            points = q.get("essentiel") or []
+            present = entry["verdict"].get("points_presents") or []
+            missing = [p for i, p in enumerate(points) if i >= len(present) or not present[i]]
             lines += [
                 f"**{q['id']} – {q['question']}** ({entry['verdict']['verdict']})",
                 "",
                 f"- Attendu : {q['reponse_attendue']}",
+                f"- Points manquants : {' ; '.join(missing) or 'aucun'}",
+                f"- Analyse du modèle : {entry.get('analyse') or '—'}",
                 f"- Réponse : {entry['reponse']}",
                 f"- Règles citées : {', '.join(entry['regles']) or 'aucune'} · passages reçus : {', '.join(entry['passages'])}",
                 f"- Juge : {entry['verdict']['justification']}",
