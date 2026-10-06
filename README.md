@@ -102,10 +102,17 @@ python -m volley_rag.eval_retrieval                          # mesure sur le jeu
 | Méthode | Recall@1 | Recall@3 | Recall@5 | MRR |
 | --- | ---: | ---: | ---: | ---: |
 | BM25 | 59 % | 85 % | 88 % | 0,72 |
-| Dense (bge-m3) | à mesurer | | | |
-| Hybride | à mesurer | | | |
+| Dense (bge-m3) | 65 % | **94 %** | **97 %** | 0,79 |
+| Hybride (BM25 + bge-m3) | **82 %** | 91 % | 91 % | **0,87** |
 
-Les échecs de BM25 sont des écarts de vocabulaire : un joueur dit « porté », le règlement dit « tenu » ; « avec le pied » ne correspond à aucun mot de « n'importe quelle partie du corps ». Détail : [`eval/results/recherche.md`](eval/results/recherche.md).
+*Mesuré le 6 octobre 2026 sur RTX 5070 Ti (indexation des 134 documents : 51 s).*
+
+- **BM25** échoue sur les écarts de vocabulaire : un joueur dit « porté », le règlement dit « tenu » ; « avec le pied » ne correspond à aucun mot de « n'importe quelle partie du corps ».
+- **bge-m3** comble ces écarts : le bon article est dans les 5 premiers pour 33 questions sur 34.
+- **L'hybride** place bien plus souvent le bon article en tête, mais perd un peu en Recall@5 : quand BM25 se trompe franchement, il fait descendre la bonne réponse.
+- Pour la génération, le modèle recevra les 5 premiers passages : c'est le **Recall@5** qui compte le plus, donc la recherche dense est le meilleur choix par défaut.
+
+Limites : 34 questions seulement (une question = 3 points de pourcentage), rédigées en connaissant le règlement. Le jeu de test doit grandir avec de vraies questions de joueurs. Détail : [`eval/results/recherche.md`](eval/results/recherche.md).
 
 ## Structure du dépôt
 
