@@ -162,7 +162,9 @@ chatbot_regles_volley/
 │   ├── embeddings.py         # embeddings via Ollama
 │   ├── index.py              # construction de l'index
 │   ├── retrieval.py          # BM25, dense, hybride
-│   └── eval_retrieval.py     # Recall@k, MRR
+│   ├── eval_retrieval.py     # Recall@k, MRR
+│   ├── ask.py                # génération avec citations (Ollama)
+│   └── eval_generation.py    # justesse, citations, refus
 └── tests/
 ```
 
