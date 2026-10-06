@@ -138,7 +138,17 @@ python -m volley_rag.eval_generation               # qwen3:14b et mistral-nemo, 
 | Citations inventées | Numéros cités qui n'existent pas dans le règlement |
 | Refus | Hors sujet bien refusés ; questions valides refusées à tort |
 
-Résultats : *à mesurer*.
+### Résultats v1 (6 octobre 2026, RTX 5070 Ti, recherche bge-m3, 5 passages, juge qwen3:14b)
+
+| Modèle | Justesse | Bonne règle citée | Citations inventées | Hors sujet refusés | Refus à tort | Durée / question |
+| --- | ---: | ---: | ---: | :---: | ---: | ---: |
+| qwen3:14b | **66 %** | **97 %** | 0 / 57 | 2 / 3 | 0 | 21,9 s |
+| mistral-nemo | 57 % | 85 % | 0 / 39 | 1 / 3 | 0 | 6,5 s |
+
+- Aucun numéro de règle inventé : contraindre le modèle aux extraits fonctionne.
+- qwen3 cite la bonne règle dans 97 % des cas mais n'est juste qu'à 66 % : l'écart vient de la conclusion tirée de l'article (ou de la sévérité du juge), pas de la recherche.
+- Le refus du hors sujet reste à améliorer.
+- Biais connu : qwen3 juge aussi ses propres réponses.
 
 ## Structure du dépôt
 
